@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scrabble Score Tracker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900|Lora:400,700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      background: #f7f3ea;
+      min-height: 100vh; margin: 0; padding: 0;
+      font-family: 'Lora', serif; color: #4a2c0b;
+    }
+    #app {
+      max-width: 430px;
+      margin: 32px auto; padding: 34px 3vw 22px 3vw;
+      background: rgba(255,255,255,0.75);
+      border-radius: 18px; border: 2px solid #7e5c3d;
+      box-shadow: 2px 6px 42px 6px rgba(78,48,24,0.09);
+      position: relative; min-height: 500px;
+    }
+    h1 { font-family: 'Playfair Display', serif; color: #7e5c3d; font-size: 2.1em; text-align:center; margin-bottom:23px;}
+    .btn { display:block; width:100%; margin:14px 0; padding:17px 0; border:none; border-radius:11px;
+      background:linear-gradient(99deg,#7e5c3d 60%,#22543d 100%); color:#f7f3ea;
+      font-size:1.18em;font-family:'Playfair Display',serif;font-weight:bold;cursor:pointer;
+      transition: background .2s,transform .15s;}
+    .btn:hover {background:linear-gradient(99deg,#22543d 50%,#7e5c3d 100%);}
+    .back {margin:23px auto 0 auto;width:60%;padding:12px 0;background:linear-gradient(99deg,#22543d 70%,#7e5c3d 100%);font-size:1.02em;}
+    .view { display:none; }
+    .active { display:block; animation:fadein .45s;}
+    @keyframes fadein {from{opacity:0;transform:translateY(23px);}to{opacity:1;transform:none;}}
+    form { display:flex; flex-direction:column; gap:11px;}
+    label{font-family:'Playfair Display',serif;font-weight:bold;color:#22543d;}
+    input[type="text"],input[type="number"],input[type="date"] {
+      padding: 10px 12px; border-radius: 6px; border:2px solid #7e5c3d; font-size:1.04em;
+      background: #fcf7ee; color:#4a2c0b; outline:none;
+    }
+    .form-err{color:#b53e29;background:#f1d6ce;border-radius:5px;font-size:.99em;padding:6px 10px;}
+    .succ{color:#22543d;font-family:'Playfair Display',serif;text-align:center;margin:13px 0;}
+    .add-team-btn{background:#e5ca7a;color:#7e5c3d;font-family:'Playfair Display',serif;border:2px solid #7e5c3d;border-radius:5px;padding:5px 15px;cursor:pointer;}
+    .add-team-btn[disabled]{opacity:.53;cursor:not-allowed;}
+    table.res {width:100%;background:#f9f6f2;border-radius:8px;box-shadow:0 1px 16px 1px #82531513;
+      border:2px solid #7e5c3d;
+      margin:13px 0;font-size:1.05em;border-collapse:collapse;}
+    .res th, .res td {padding:11px 6px;text-align:center;font-family:'Lora',serif;}
+    .res th {background:#7e5c3d;color:#f7f3ea;}
+    .winner {background:linear-gradient(88deg,#ffc83d 80%,#fcf6e0 100%);color:#4b3a19;font-weight:700;}
+    .crown{font-size:1.13em;margin-right:2px;}
+    .block{border:2px solid #22543d;border-radius:12px;background:#f7f3ea;margin-bottom:18px;padding:11px 8px;}
+    .game-date{font-family:'Playfair Display',serif;color:#22543d;font-size:1.13em;font-weight:700;text-align:left;padding-bottom:3px;}
+    .list{max-height:33vh;overflow-y:auto;}
+    #tilebar{display:flex;justify-content:center;gap:4px;margin-bottom:17px;user-select:none;}
+    .tile {
+      width:34px;height:34px;background:linear-gradient(105deg,#e5ca7a 85%,#feeeac);border-radius:6px;
+      box-shadow:0 4px 0 #b89748,1px 2px 7px #aa8b3881;
+      font-family:'Playfair Display',serif;font-size:1.38em;color:#4c3605;display:flex;justify-content:center;align-items:center;
+      position:relative; font-weight:600; letter-spacing:-.03em;transition:transform .4s;}
+    .tile .s{font-size:.80em;position:absolute;right:3.3px;bottom:-2.5px;color:#947922;}
+    @media(max-width:650px){#app{max-width:97vw;padding:6vw 3vw 4vw 3vw;}}
+    @media(max-width:400px){.res th,.res td{padding:5px 2px;font-size:.94em;}}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="tilebar"></div>
+  <!-- Home View -->
+  <div id="home" class="view active">
+    <h1>Scrabble Score Tracker</h1>
+    <button class="btn" id="startbtn">Start a Game</button>
+    <button class="btn" id="addbtn">Add a Score</button>
+    <button class="btn" id="endbtn">End a Game</button>
+    <button class="btn" id="resbtn">See Past Results</button>
+  </div>
+  <!-- Start Game View -->
+  <div id="start" class="view">
+    <h1>Start New Game</h1>
+    <form id="startform" novalidate autocomplete="off">
+      <label>Game Date</label>
+      <input type="date" name="date" required>
+      <div id="teams"><label>Team Name(s)</label></div>
+      <button type="button" class="add-team-btn" id="addteam">+ Add Team</button>
+      <div id="starterr" class="form-err" style="display:none"></div>
+      <button class="btn" type="submit">Start Game</button>
+    </form>
+    <button class="back btn">Back to Home</button>
+  </div>
+  <!-- Add Score View -->
+  <div id="add" class="view">
+    <h1>Add Score</h1>
+    <form id="addform" novalidate autocomplete="off">
+      <label>Game Date <input type="date" name="date" required></label>
+      <label>Team Name <input type="text" name="team" required autocomplete="off"></label>
+      <label>Points to Add <input type="number" name="points" min="1" required></label>
+      <div id="adderr" class="form-err" style="display:none"></div>
+      <button class="btn" type="submit">Add Score</button>
+    </form>
+    <button class="back btn">Back to Home</button>
+  </div>
+  <!-- End Game View -->
+  <div id="end" class="view">
+    <h1>End Game</h1>
+    <form id="endform" novalidate autocomplete="off">
+      <label>Game Date <input type="date" name="date" required></label>
+      <div id="enderr" class="form-err" style="display:none"></div>
+      <button class="btn" type="submit">End Game</button>
+    </form>
+    <div id="endgameout"></div>
+    <button id="endback" class="back btn" style="display:none">Back to Home</button>
+  </div>
+  <!-- Past Results -->
+  <div id="results" class="view">
+    <h1>Past Results</h1>
+    <div id="resultslist" class="list"></div>
+    <button class="back btn">Back to Home</button>
+  </div>
+</div>
+<script>
+const STORAGE_KEY="scrabbleGames";
+function getGames(){
+  try{let d=localStorage.getItem(STORAGE_KEY);return d?JSON.parse(d):[];}catch(e){return[];}
+}
+function saveGames(g){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(g));return!0}catch(e){return!1}}
+function updateGame(gm){let gs=getGames(),i=gs.findIndex(x=>x.date===gm.date);if(i>-1){gs[i]=gm;return saveGames(gs)}return!1}
+function findGame(d){return getGames().find(g=>g.date===d)||null;}
+function show(v){["home","start","add","end","results"].forEach(id=>{
+  document.getElementById(id).classList[ id===v?"add":"remove"]("active")
+}); if(v==="start")resetStart(); if(v==="add")clearAdd(); if(v==="end")clearEnd(); if(v==="results")fillResults(); tilebarAnim(v==="home");}
+document.querySelectorAll(".back").forEach(btn=>btn.onclick=()=>show("home"));
+
+/* --- Animated Tiles --- */
+let tileLayout=[{l:'S',v:1},{l:'C',v:3},{l:'R',v:1},{l:'A',v:1},{l:'B',v:3},{l:'B',v:3},{l:'L',v:1},{l:'E',v:1}];
+const tilebar=document.getElementById('tilebar');
+function tilebarRender(){tilebar.innerHTML="";tileLayout.forEach(t=>{
+  let d=document.createElement('div');d.className="tile";d.innerHTML=t.l+'<span class="s">'+t.v+"</span>";tilebar.appendChild(d);
+})}
+let tbarTimer; function tilebarAnim(active){if(!active){tilebar.style.opacity=.18;if(tbarTimer)clearInterval(tbarTimer);return;}
+tilebar.style.opacity=1;if(!tilebar.hasChildNodes())tilebarRender();
+if(tbarTimer)clearInterval(tbarTimer); tbarTimer=setInterval(()=>{
+  let c=Array.from(tilebar.children),i1=Math.floor(Math.random()*c.length),
+    i2=(i1+Math.floor(Math.random()*7+1))%c.length;c[i1].style.transform="translateY(-17px)";
+    c[i2].style.transform="translateY(-8px)";
+  setTimeout(()=>{
+    tilebar.insertBefore(c[i2],c[i1]);c.forEach(t=>t.style.transform="");},340);
+},1550);}
+
+/* --- Home buttons --- */
+document.getElementById('startbtn').onclick = ()=>show("start");
+document.getElementById('addbtn').onclick = ()=>show("add");
+document.getElementById('endbtn').onclick = ()=>show("end");
+document.getElementById('resbtn').onclick = ()=>show("results");
+
+/* --- Start Game logic --- */
+const addTeamBtn=document.getElementById('addteam'),teamsDiv=document.getElementById('teams'),starterr=document.getElementById('starterr');
+function resetStart(){
+  document.getElementById("startform").reset(); teamsDiv.innerHTML='<label>Team Name(s)</label>';
+  starterr.style.display="none";for(let i=0;i<1;i++)addTeamInp();addTeamBtn.disabled=false;
+}
+function addTeamInp(){let n=teamsDiv.querySelectorAll('input').length;
+  if(n>=4)return;let inp=document.createElement('input');
+  inp.type="text";inp.required=true;inp.maxLength=30;inp.className='team-inp';inp.placeholder=`Team ${n+1} Name`;
+  teamsDiv.appendChild(inp); addTeamBtn.disabled=(n>=3);}
+addTeamBtn.onclick=()=>addTeamInp();
+document.getElementById("startform").onsubmit = function(e){
+  e.preventDefault(); starterr.style.display="none";
+  const date=this.date.value.trim(),tn=Array.from(teamsDiv.querySelectorAll('input')).map(x=>x.value.trim()).filter(Boolean);
+  if(!date){starterr.textContent="Select a game date.";starterr.style.display="block";return;}
+  if(!tn.length){starterr.textContent="Enter at least one team name.";starterr.style.display="block";return;}
+  if((new Set(tn.map(s=>s.toLowerCase()))).size!==tn.length){starterr.textContent="Duplicate team names.";starterr.style.display="block";return;}
+  if(getGames().some(g=>g.date===date)){starterr.textContent="A game with this date exists.";starterr.style.display="block";return;}
+  let ng={date,teams:tn.map(n=>({name:n,score:0})),ended:false};
+  let ok=saveGames([...getGames(),ng]); if(!ok){starterr.textContent="Could not save game.";starterr.style.display="block";return;}
+  showSucc("Game started!");
+}
+function showSucc(msg){let d=document.createElement('div');d.className="succ";d.textContent=msg;
+document.getElementById('app').appendChild(d); setTimeout(()=>{d.remove();show('home')},1090);}
+
+/* --- Add Score --- */
+const addform=document.getElementById('addform'),adderr=document.getElementById('adderr');
+function clearAdd(){addform.reset();adderr.style.display="none";}
+addform.onsubmit=function(e){
+  e.preventDefault(); adderr.style.display="none";
+  const date=this.date.value.trim(),team=this.team.value.trim(),pts=+this.points.value;
+  if(!date||!team||pts<1){adderr.textContent="Fill all fields (points>0).";adderr.style.display="block";return;}
+  let g=findGame(date); if(!g){adderr.textContent="Game not found.";adderr.style.display="block";return;}
+  if(g.ended){adderr.textContent="Game already ended.";adderr.style.display="block";return;}
+  let idx=g.teams.findIndex(t=>t.name.trim().toLowerCase()===team.trim().toLowerCase());
+  if(idx<0){adderr.textContent="Team does not exist in this game.";adderr.style.display="block";return;}
+  g.teams[idx].score+=pts;
+  if(updateGame(g)){showSucc(`${g.teams[idx].name} now has ${g.teams[idx].score} points!`);}
+  else{adderr.textContent="Could not save score.";adderr.style.display="block";}
+}
+
+/* --- End Game --- */
+const endform=document.getElementById('endform'),enderr=document.getElementById('enderr'),endout=document.getElementById('endgameout'),endback=document.getElementById('endback');
+function clearEnd(){endform.reset();enderr.style.display="none";endout.innerHTML="";endback.style.display="none";}
+endform.onsubmit=function(e){
+  e.preventDefault(); enderr.style.display="none"; endout.innerHTML="";endback.style.display="none";
+  const date=this.date.value.trim(); if(!date){enderr.textContent="Enter the game date."; enderr.style.display="block"; return;}
+  let g=findGame(date); if(!g){enderr.textContent="No game found with this date.";enderr.style.display="block";return;}
+  if(g.ended){enderr.textContent="Game already ended.";enderr.style.display="block";return;}
+  g.ended=true;if(!updateGame(g)){enderr.textContent="Could not end game.";enderr.style.display="block";return;}
+  showTable(g,endout,true);
+  endback.style.display="block"; endback.onclick=()=>show('home');
+}
+
+/* --- Past Results --- */
+function fillResults(){
+  const q=document.getElementById('resultslist');q.innerHTML="";
+  let gs=getGames().filter(g=>g.ended).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!gs.length){q.innerHTML='<div style="text-align:center;margin-top:31px;font-family:\'Playfair Display\',serif;color:#4a2c0b;">No completed games yet — finish a game to see results here!</div>';return;}
+  gs.forEach(g=>{
+    let bl = document.createElement('div'); bl.className="block";
+    let h = document.createElement('div'); h.className="game-date"; h.textContent=niceDate(g.date); bl.appendChild(h);
+    let area=document.createElement('div'); showTable(g,area,false); bl.appendChild(area); q.appendChild(bl);
+  });
+}
+
+/* --- Results Table Rendering --- */
+function showTable(game,container,showHead){
+  let tms=[...game.teams].sort((a,b)=>b.score-a.score),win=tms[0]?tms[0].score:0;
+  let html=`<table class="res"><thead><tr><th>Rank</th><th>Team Name</th><th>Score</th></tr></thead><tbody>`;
+  tms.forEach((t,i)=>{
+    let winr=(i===0&&t.score===win); html+=`<tr class="${winr?'winner':''}"><td>${winr?'<span class="crown">👑</span> 1':(i+1)}</td><td>${t.name}</td><td>${t.score}</td></tr>`;
+  }); html+=`</tbody></table>`;
+  container.innerHTML=html;
+}
+function niceDate(d){let D=new Date(d);if(isNaN(D))return d;return D.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'2-digit'});}
+tilebarAnim(true);
+</script>
+</body>
+</html>
